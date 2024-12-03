@@ -1,88 +1,48 @@
-#include <LiquidCrystal.h>
+#include <LiquidCrystal.h>  // Use this for standard LCD (non-I2C)
 
-// Initialize the LCD (adjust pins if needed)
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+// Define the hardware serial communication on Mega (using Serial1)
+HardwareSerial& mySerial = Serial1;  // Use Serial1 for communication with Uno node
 
-// Node detection counters
-int node1Count = 0;
-int node2Count = 0; // Add more nodes as needed
+// LCD display setup (using standard LCD)
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2); // Adjust pin numbers based on your wiring
 
-unsigned long startTime;
-unsigned long currentTime;
-
-String receivedMessage = "";
+int whaleCount = 0;  // Counter for detected whales
+unsigned long startMillis;
+unsigned long currentMillis;
 
 void setup() {
-  lcd.begin(16, 2); // Initialize the LCD
-  Serial.begin(9600); // Communication with nodes
-  startTime = millis();
-  lcd.print("System Ready");
-  delay(2000);
-  lcd.clear();
-  lcd.print("Idle...");
+    // Start serial communication
+    Serial.begin(9600);        // Serial monitor for debugging
+    mySerial.begin(9600);      // Use Serial1 for Uno node communication
+    lcd.begin(16, 2);          // Initialize LCD
+
+    lcd.setCursor(0, 0);
+    lcd.print("Whale Detection");
+
+    startMillis = millis();    // Start the timer for elapsed time
 }
 
 void loop() {
-  // Check for messages from nodes
-  if (Serial.available()) {
-    receivedMessage = Serial.readString();
-    processMessage(receivedMessage);
-  }
+    currentMillis = millis();
 
-  // Update timer display every second
-  if (millis() - currentTime >= 1000) {
-    updateTimer();
-    currentTime = millis();
-  }
+    // Display elapsed time on LCD
+    lcd.setCursor(0, 1);
+    lcd.print("Time: ");
+    lcd.print((currentMillis - startMillis) / 1000); // seconds
+
+    // Check if data is available from Uno node via Serial1
+    if (mySerial.available()) {
+        String message = mySerial.readStringUntil('\n');
+        processMessage(message);
+    }
 }
 
 void processMessage(String message) {
-  if (message.startsWith("Node")) {
-    String nodeId = message.substring(0, 5); // Extract Node ID
-    lcd.clear();
-    lcd.print("From: ");
-    lcd.print(nodeId);
-
-    if (message.endsWith("WhaleDetected")) {
-      lcd.setCursor(0, 1);
-      lcd.print("Whale Spotted!");
-
-      // Update detection count
-      if (nodeId == "Node1") {
-        node1Count++;
-      } else if (nodeId == "Node2") {
-        node2Count++;
-      }
-
-      // Send approval to the specific node
-      Serial.println("Approved:" + nodeId);
-
-      delay(2000); // Display the message for 2 seconds
-      displayNodeStats();
+    // Display incoming message and update whale count
+    if (message.startsWith("Node1:WhaleDetected")) {
+        whaleCount++;
+        lcd.setCursor(0, 1);
+        lcd.print("Whale Count: ");
+        lcd.print(whaleCount);
     }
-  }
-}
-
-void displayNodeStats() {
-  lcd.clear();
-  lcd.print("N1: ");
-  lcd.print(node1Count);
-  lcd.print(" N2: ");
-  lcd.print(node2Count);
-  lcd.setCursor(0, 1);
-  lcd.print("Idle...");
-}
-
-void updateTimer() {
-  unsigned long elapsedTime = (millis() - startTime) / 1000; // Time in seconds
-  int minutes = elapsedTime / 60;
-  int seconds = elapsedTime % 60;
-
-  lcd.setCursor(0, 1);
-  lcd.print("Time: ");
-  if (minutes < 10) lcd.print("0");
-  lcd.print(minutes);
-  lcd.print(":");
-  if (seconds < 10) lcd.print("0");
-  lcd.print(seconds);
 }
