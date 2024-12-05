@@ -1,48 +1,54 @@
-#include <LiquidCrystal.h>  // Use this for standard LCD (non-I2C)
+#include <LiquidCrystal.h>
 
-// Define the hardware serial communication on Mega (using Serial1)
-HardwareSerial& mySerial = Serial1;  // Use Serial1 for communication with Uno node
+// Define LCD pin configuration
+LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 
-// LCD display setup (using standard LCD)
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2); // Adjust pin numbers based on your wiring
+// Hardware serial communication with Uno
+HardwareSerial &mySerial = Serial1;
 
+// Variables
 int whaleCount = 0;  // Counter for detected whales
-unsigned long startMillis;
-unsigned long currentMillis;
 
 void setup() {
-    // Start serial communication
-    Serial.begin(9600);        // Serial monitor for debugging
-    mySerial.begin(9600);      // Use Serial1 for Uno node communication
-    lcd.begin(16, 2);          // Initialize LCD
+    // Initialize serial communication
+    Serial.begin(9600);        // For debugging
+    mySerial.begin(9600);      // Communication with Uno node
 
+    // Initialize LCD
+    lcd.begin(16, 2);          // 16x2 LCD
     lcd.setCursor(0, 0);
     lcd.print("Whale Detection");
 
-    startMillis = millis();    // Start the timer for elapsed time
+    // Debugging message
+    Serial.println("Mega Initialized and Ready");
 }
 
 void loop() {
-    currentMillis = millis();
-
-    // Display elapsed time on LCD
+    // Display whale count on LCD
     lcd.setCursor(0, 1);
-    lcd.print("Time: ");
-    lcd.print((currentMillis - startMillis) / 1000); // seconds
+    lcd.print("Whales: ");
+    lcd.print(whaleCount);
+    lcd.print("     ");  // Clear trailing characters
 
-    // Check if data is available from Uno node via Serial1
+    // Check for incoming messages from the Uno node
     if (mySerial.available()) {
-        String message = mySerial.readStringUntil('\n');
+        String message = mySerial.readStringUntil('\n'); // Read incoming message
         processMessage(message);
     }
+
+    delay(100);  // Adjust delay for smooth operation
 }
 
 void processMessage(String message) {
-    // Display incoming message and update whale count
+    // Process the incoming message
     if (message.startsWith("Node1:WhaleDetected")) {
-        whaleCount++;
-        lcd.setCursor(0, 1);
-        lcd.print("Whale Count: ");
-        lcd.print(whaleCount);
+        whaleCount++; // Increase whale count
+        Serial.println("Whale Detected - Count Updated");
+        playSound();  // Play sound immediately when a whale is detected
     }
+}
+
+void playSound() {
+    // Placeholder for sound indication (optional on Mega)
+    Serial.println("Sound Triggered");
 }

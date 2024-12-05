@@ -1,23 +1,31 @@
 #include <SoftwareSerial.h>
 
-SoftwareSerial mySerial(2, 3); // RX, TX for communication with Mega (pins 2 and 3)
+// SoftwareSerial configuration
+SoftwareSerial mySerial(2, 3); // RX, TX for communication with Mega
 
-int trigPin = 7;   // Ultrasonic TRIG pin
-int echoPin = 6;   // Ultrasonic ECHO pin
-int buzzerPin = 9; // Buzzer pin
+// Ultrasonic sensor pins
+const int trigPin = 6;
+const int echoPin = 5;
+
+// Buzzer pin
+const int buzzerPin = 9;
+
+// Variables
 long duration;
 int distance;
 
 void setup() {
+    // Initialize pins
     pinMode(trigPin, OUTPUT);
     pinMode(echoPin, INPUT);
     pinMode(buzzerPin, OUTPUT);
 
-    mySerial.begin(9600);  // Start communication with Mega
+    // Initialize serial communication
+    mySerial.begin(9600);  // Communication with Mega
     Serial.begin(9600);    // For debugging
 
-    // Send initial status
-    mySerial.println("Node ready");
+    // Debugging message
+    Serial.println("Uno Initialized and Ready");
 }
 
 void loop() {
@@ -27,26 +35,27 @@ void loop() {
     digitalWrite(trigPin, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
-    duration = pulseIn(echoPin, HIGH);
-    distance = duration * 0.034 / 2; // Calculate distance in cm
 
-    if (distance > 0 && distance <= 50) { // Whale detected (within 50 cm)
-        mySerial.println("Node1:WhaleDetected");  // Send message to Mega
-        playSound();  // Play sound
-        delay(5000);   // Delay to avoid multiple detections in quick succession
+    // Calculate distance
+    duration = pulseIn(echoPin, HIGH);
+    distance = duration * 0.034 / 2; // Convert to cm
+
+    // Check if a whale is detected
+    if (distance > 0 && distance <= 50) { // Object within 50 cm
+        mySerial.println("Node1:WhaleDetected");  // Notify Mega
+        Serial.println("Whale Detected");
+        playSound();  // Play sound on detection
+        delay(2000);  // Wait to avoid spamming detections
     }
+
+    delay(100);  // Adjust delay for smoother operation
 }
 
 void playSound() {
-    int notes[] = {262, 294, 330, 349, 392, 440, 494}; // Frequencies for C4 to B4
-    int numNotes = sizeof(notes) / sizeof(notes[0]);
-
-    for (int i = 0; i < 5; i++) { // Play 5 random notes
-        int note = notes[random(0, numNotes)];
-        tone(buzzerPin, note, 300); // Play note for 300ms
-        delay(350); // Small gap between notes
+    // Generate a simple sound pattern
+    for (int i = 0; i < 3; i++) { // Play three tones
+        tone(buzzerPin, 1000 + (i * 200), 300); // Frequency increases
+        delay(400);  // Pause between tones
     }
-
-    noTone(buzzerPin); // Stop the tone
+    noTone(buzzerPin); // Ensure buzzer stops
 }
-  
